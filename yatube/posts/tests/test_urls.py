@@ -54,7 +54,6 @@ class TaskURLTests(TestCase):
                 response = self.authorized_client.get(address)
                 self.assertEqual(response.status_code, 200)
 
-
     def test_urls_not_author_users(self):
         """Доступность публичных страниц для неавторизованного пользователя"""
 
@@ -63,7 +62,6 @@ class TaskURLTests(TestCase):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, 200)
 
-
     def test_urls_not_author_users_redirect(self):
         """Редирект неавторизованного с публичных страниц"""
 
@@ -71,7 +69,6 @@ class TaskURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, 302)
-
 
     def test_urls_not_author_users_edit_redirect(self):
         """Редирект авторизованного при попытке редактирования чужого поста"""
@@ -86,7 +83,6 @@ class TaskURLTests(TestCase):
         response = self.authorized_client.get(f'/posts/{post_new.id}/edit/')
         self.assertEqual(response.status_code, 302)
 
-
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
@@ -98,7 +94,6 @@ class TaskURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
-
 
     def test_wrong_uri_returns_404(self):
         response = self.authorized_client.get('/something/really/weird/')
