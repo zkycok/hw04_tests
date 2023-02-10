@@ -45,9 +45,9 @@ class TaskURLTests(TestCase):
     def test_urls_author_users(self):
         """Доступность всех страниц для
          авторизованного пользователя-автора тестового поста"""
-        templates_url_names = \
-            self.templates_url_names_public \
-            | self.templates_url_names_private
+        templates_url_names = (
+                self.templates_url_names_public
+                | self.templates_url_names_private)
 
         for address in templates_url_names.values():
             with self.subTest(address=address):
@@ -55,51 +55,51 @@ class TaskURLTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
 
-def test_urls_not_author_users(self):
-    """Доступность публичных страниц для неавторизованного пользователя"""
+    def test_urls_not_author_users(self):
+        """Доступность публичных страниц для неавторизованного пользователя"""
 
-    for address in self.templates_url_names_public.values():
-        with self.subTest(address=address):
-            response = self.guest_client.get(address)
-            self.assertEqual(response.status_code, 200)
-
-
-def test_urls_not_author_users_redirect(self):
-    """Редирект неавторизованного с публичных страниц"""
-
-    for address in self.templates_url_names_private.values():
-        with self.subTest(address=address):
-            response = self.guest_client.get(address)
-            self.assertEqual(response.status_code, 302)
+        for address in self.templates_url_names_public.values():
+            with self.subTest(address=address):
+                response = self.guest_client.get(address)
+                self.assertEqual(response.status_code, 200)
 
 
-def test_urls_not_author_users_edit_redirect(self):
-    """Редирект авторизованного при попытке редактирования чужого поста"""
+    def test_urls_not_author_users_redirect(self):
+        """Редирект неавторизованного с публичных страниц"""
 
-    user_new = User.objects.create_user(username="auth_new")
-
-    post_new = Post.objects.create(
-        text='Тестовый текст новый',
-        author=user_new,
-    )
-
-    response = self.authorized_client.get(f'/posts/{post_new.id}/edit/')
-    self.assertEqual(response.status_code, 302)
+        for address in self.templates_url_names_private.values():
+            with self.subTest(address=address):
+                response = self.guest_client.get(address)
+                self.assertEqual(response.status_code, 302)
 
 
-def test_urls_uses_correct_template(self):
-    """URL-адрес использует соответствующий шаблон."""
+    def test_urls_not_author_users_edit_redirect(self):
+        """Редирект авторизованного при попытке редактирования чужого поста"""
 
-    templates_url_names =\
-        self.templates_url_names_public\
-        | self.templates_url_names_private
+        user_new = User.objects.create_user(username="auth_new")
 
-    for template, address in templates_url_names.items():
-        with self.subTest(address=address):
-            response = self.authorized_client.get(address)
-            self.assertTemplateUsed(response, template)
+        post_new = Post.objects.create(
+            text='Тестовый текст новый',
+            author=user_new,
+        )
+
+        response = self.authorized_client.get(f'/posts/{post_new.id}/edit/')
+        self.assertEqual(response.status_code, 302)
 
 
-def test_wrong_uri_returns_404(self):
-    response = self.authorized_client.get('/something/really/weird/')
-    self.assertEqual(response.status_code, 404)
+    def test_urls_uses_correct_template(self):
+        """URL-адрес использует соответствующий шаблон."""
+
+        templates_url_names = (
+                self.templates_url_names_public
+                | self.templates_url_names_private)
+
+        for template, address in templates_url_names.items():
+            with self.subTest(address=address):
+                response = self.authorized_client.get(address)
+                self.assertTemplateUsed(response, template)
+
+
+    def test_wrong_uri_returns_404(self):
+        response = self.authorized_client.get('/something/really/weird/')
+        self.assertEqual(response.status_code, 404)
