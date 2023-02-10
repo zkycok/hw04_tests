@@ -45,8 +45,8 @@ class TaskURLTests(TestCase):
     def test_urls_author_users(self):
         """Доступность всех страниц для
          авторизованного пользователя-автора тестового поста"""
-        templates_url_names = self.templates_url_names_public | \
-                              self.templates_url_names_private
+        templates_url_names = (self.templates_url_names_public |
+                               self.templates_url_names_private)
 
         for address in templates_url_names.values():
             with self.subTest(address=address):
@@ -85,8 +85,8 @@ class TaskURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
-        templates_url_names = self.templates_url_names_public | \
-                              self.templates_url_names_private
+        templates_url_names = (self.templates_url_names_public |
+                               self.templates_url_names_private)
 
         for template, address in templates_url_names.items():
             with self.subTest(address=address):

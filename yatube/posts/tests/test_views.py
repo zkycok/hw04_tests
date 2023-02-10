@@ -224,7 +224,8 @@ class PaginatorViewsTest(TestCase):
         ]
         for address in addresses:
             response = self.authorised_client.get(address)
-            self.assertEqual(len(response.context['page_obj']), self.count_post)
+            self.assertEqual(len(response.context['page_obj']),
+                             self.count_post)
 
     def test_second_page_contains_three_records(self):
         addresses = [
@@ -234,4 +235,5 @@ class PaginatorViewsTest(TestCase):
         ]
         for address in addresses:
             response = self.authorised_client.get(address + '?page=2')
-            self.assertEqual(len(response.context['page_obj']), self.create_post)
+            self.assertEqual(len(response.context['page_obj']),
+                             self.create_post)
