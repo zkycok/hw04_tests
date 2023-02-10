@@ -93,4 +93,3 @@ class TaskCreateFormTests(TestCase):
 
         self.assertEqual(response_not_aut.status_code, HTTPStatus.OK)
         self.assertNotEqual(Post.objects.count(), post_count + 1)
-

@@ -33,8 +33,11 @@ class TaskPagesTests(TestCase):
 
         # запуталась, не совсем поняла
         # TODO
-        # cls.index = ('posts/index.html', {'posts:index': cls.group.slug}, None)
-        # cls.group_list = ('posts:group_list', {'posts/index.html': cls.group.slug}, {'slug': cls.group.slug})
+        # cls.index = ('posts/index.html',
+        # {'posts:index': cls.group.slug}, None)
+        # cls.group_list = ('posts:group_list',
+        # {'posts/index.html': cls.group.slug},
+        # {'slug': cls.group.slug})
 
     def setUp(self):
         self.authorized_client = Client()
