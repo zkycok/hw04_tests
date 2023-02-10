@@ -18,15 +18,30 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый пост',
+            text='Тестовый пост для проверки'[:15],
+            pub_date='Дата публикации',
+            group=cls.group
         )
 
-    def test_models_have_correct_object_names(self):
-        """Проверяем, что у моделей корректно работает __str__."""
-        group = PostModelTest.group
-        slug = group.slug
-        self.assertEqual(slug, 'Тестовый слаг')
+    def test_title_label_post(self):
+        """Проверка заполнения атрибутов Post"""
 
-        post = PostModelTest.post
-        expected_object_name = post.text[:15]
-        self.assertEqual(expected_object_name, self.post.text)
+        templates_field = {self.post.text: self.post.text[:15],
+                           self.post.pub_date: self.post.pub_date,
+                           self.group: self.group,
+                           self.user: self.user}
+
+        for field, value in templates_field.items():
+            with self.subTest(field=field):
+                self.assertEqual(field, value)
+
+    def test_title_label_group(self):
+        """Проверка заполнения атрибутов Group"""
+
+        templates_field = {self.group.title: 'Тестовая группа',
+                           self.group.slug: 'Тестовый слаг',
+                           self.group.description: 'Тестовое описание'}
+
+        for field, value in templates_field.items():
+            with self.subTest(field=field):
+                self.assertEqual(field, value)
