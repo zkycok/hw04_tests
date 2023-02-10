@@ -31,10 +31,14 @@ class TaskPagesTests(TestCase):
             id=1,
         )
 
+        # запуталась, не совсем поняла
+        # TODO
+        # cls.index = ('posts/index.html', {'posts:index': cls.group.slug}, None)
+        # cls.group_list = ('posts:group_list', {'posts/index.html': cls.group.slug}, {'slug': cls.group.slug})
+
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        # self.index =
 
     def test_pages_posts_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
