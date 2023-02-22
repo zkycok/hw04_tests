@@ -48,7 +48,8 @@ class TaskPagesTests(TestCase):
         # cls.group_list = ('posts:group_list',
         # {'posts/index.html': cls.group.slug},
         # {'slug': cls.group.slug})
-        cls.templates_pages_names = [(reverse('posts:index'), 'posts/index.html'),
+        cls.templates_pages_names = [(reverse('posts:index'),
+                                      'posts/index.html'),
                                      (reverse('posts:group_list',
                                               kwargs={'slug': cls.group.slug}),
                                       'posts/group_list.html'),
@@ -98,8 +99,9 @@ class TaskPagesTests(TestCase):
 
     def test_group_list_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        result = self.first_page_info(reverse('posts:group_list',
-                                              kwargs={'slug': self.group.slug}))
+        result = self.first_page_info(
+            reverse('posts:group_list',
+                    kwargs={'slug': self.group.slug}))
         self.assertEqual(result.context.get('group'), self.group)
 
     def test_post_detail_correct_context(self):

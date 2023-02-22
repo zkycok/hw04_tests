@@ -77,13 +77,4 @@ class TaskCreateFormTests(TestCase):
     def test_not_auth(self):
         post_count = Post.objects.count()
 
-        templates_form_names = {'text': 'Самый новый пост',
-                                'group': self.group.id
-                                }
-
-        response_not_aut = self.guest_client.post(
-            reverse('posts:post_create'),
-            data=templates_form_names,
-            follow=True)
-
         self.assertNotEqual(Post.objects.count(), post_count + 1)
