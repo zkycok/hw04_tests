@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
@@ -18,7 +20,7 @@ class PostModelTest(TestCase):
         )
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый пост для проверки'[:15],
+            text='Тестовый пост для проверки',
             pub_date='Дата публикации',
             group=cls.group
         )
@@ -26,10 +28,9 @@ class PostModelTest(TestCase):
     def test_title_label_post(self):
         """Проверка заполнения атрибутов Post"""
 
-        templates_field = {self.post.text: self.post.text[:15],
-                           self.post.pub_date: self.post.pub_date,
-                           self.group: self.group,
-                           self.user: self.user}
+        templates_field = {str(self.post): f'{self.post.text[:15]},'
+                                           f' {self.post.pub_date},'
+                                           f' {self.post.group}'}
 
         for field, value in templates_field.items():
             with self.subTest(field=field):
@@ -38,9 +39,7 @@ class PostModelTest(TestCase):
     def test_title_label_group(self):
         """Проверка заполнения атрибутов Group"""
 
-        templates_field = {self.group.title: 'Тестовая группа',
-                           self.group.slug: 'Тестовый слаг',
-                           self.group.description: 'Тестовое описание'}
+        templates_field = {str(self.group): f'Group: {self.group.slug}'}
 
         for field, value in templates_field.items():
             with self.subTest(field=field):

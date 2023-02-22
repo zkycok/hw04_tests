@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase, Client
 
@@ -37,6 +39,9 @@ class TaskURLTests(TestCase):
             name_create: '/create/',
         }
 
+        cls.templates_url_names = {**cls.templates_url_names_public,
+                                   **cls.templates_url_names_private}
+
     def setUp(self):
         self.guest_client = Client()
         self.authorized_client = Client()
@@ -46,13 +51,10 @@ class TaskURLTests(TestCase):
         """Доступность всех страниц для
          авторизованного пользователя-автора тестового поста"""
 
-        templates_url_names = self.templates_url_names_public.copy()
-        templates_url_names.update(self.templates_url_names_private)
-
-        for address in templates_url_names.values():
+        for address in self.templates_url_names.values():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_not_author_users(self):
         """Доступность публичных страниц для неавторизованного пользователя"""
@@ -60,7 +62,7 @@ class TaskURLTests(TestCase):
         for address in self.templates_url_names_public.values():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_urls_not_author_users_redirect(self):
         """Редирект неавторизованного с публичных страниц"""
@@ -68,7 +70,7 @@ class TaskURLTests(TestCase):
         for address in self.templates_url_names_private.values():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
-                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_urls_not_author_users_edit_redirect(self):
         """Редирект авторизованного при попытке редактирования чужого поста"""
@@ -81,19 +83,16 @@ class TaskURLTests(TestCase):
         )
 
         response = self.authorized_client.get(f'/posts/{post_new.id}/edit/')
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
-        templates_url_names = self.templates_url_names_public.copy()
-        templates_url_names.update(self.templates_url_names_private)
-
-        for template, address in templates_url_names.items():
+        for template, address in self.templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_wrong_uri_returns_404(self):
         response = self.authorized_client.get('/something/really/weird/')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)

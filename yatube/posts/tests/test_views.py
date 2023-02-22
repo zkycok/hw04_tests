@@ -6,7 +6,7 @@ from django.urls import reverse
 from posts.forms import PostForm
 from posts.models import Group, Post
 
-from yatube.settings import POSTS_LIMIT
+from django.conf import settings
 
 User = get_user_model()
 
@@ -16,19 +16,29 @@ class TaskPagesTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.user = User.objects.create_user(username="auth")
+        cls.user = User.objects.create_user(username='auth')
 
         cls.group = Group.objects.create(
-            title="Название группы",
-            slug="test-slug",
-            description="Описание группы"
+            title='Название группы',
+            slug='test-slug',
+            description='Описание группы'
         )
 
         cls.post = Post.objects.create(
             text='Тестовый текст',
             author=cls.user,
             group=cls.group,
-            id=1,
+
+        )
+
+        cls.right_pages_tuple = (
+            (reverse('posts:index'), 'поста нет на главной'),
+            (reverse('posts:group_list',
+                     kwargs={'slug': f'{cls.group.slug}'}),
+             'поста нет в профиле'),
+            (reverse('posts:profile',
+                     kwargs={'username': f'{cls.user.username}'}),
+             'поста нет в группе'),
         )
 
         # запуталась, не совсем поняла
@@ -38,6 +48,22 @@ class TaskPagesTests(TestCase):
         # cls.group_list = ('posts:group_list',
         # {'posts/index.html': cls.group.slug},
         # {'slug': cls.group.slug})
+        cls.templates_pages_names = [(reverse('posts:index'), 'posts/index.html'),
+                                     (reverse('posts:group_list',
+                                              kwargs={'slug': cls.group.slug}),
+                                      'posts/group_list.html'),
+                                     (reverse('posts:profile',
+                                              kwargs={'username': cls.user}),
+                                      'posts/profile.html'),
+                                     (reverse('posts:post_detail',
+                                              kwargs={'post_id': cls.post.id}),
+                                      'posts/post_detail.html'),
+                                     (reverse('posts:post_edit',
+                                              kwargs={'post_id': cls.post.id}),
+                                      'posts/create_post.html'),
+                                     (reverse('posts:post_create'),
+                                      'posts/create_post.html'),
+                                     ]
 
     def setUp(self):
         self.authorized_client = Client()
@@ -46,62 +72,35 @@ class TaskPagesTests(TestCase):
     def test_pages_posts_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
-        templates_pages_names = {
-            'posts/index.html': reverse('posts:index'),
-            'posts/group_list.html':
-                reverse('posts:group_list',
-                        kwargs={'slug': self.group.slug}),
-            'posts/profile.html':
-                reverse('posts:profile',
-                        kwargs={'username': self.user}),
-            'posts/post_detail.html':
-                (reverse('posts:post_detail',
-                         kwargs={'post_id': self.post.id})),
-            'posts/create_post.html':
-                reverse('posts:post_edit',
-                        kwargs={'post_id': self.post.id}),
-        }
-
-        response = self.authorized_client.get(
-            reverse('posts:post_create'))
-        self.assertTemplateUsed(response, 'posts/create_post.html')
-
-        for template, reverse_name in templates_pages_names.items():
+        for reverse_name, template in self.templates_pages_names:
             with self.subTest(reverse_name=reverse_name):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_index_page_show_correct_context(self):
-        """Шаблон index сформирован с правильным контекстом."""
-        response = self.authorized_client.get(reverse('posts:index'))
+    def first_page_info(self, info):
+        response = self.authorized_client.get(info)
         first = response.context['page_obj'][0]
 
         self.assertEqual(first.text, self.post.text)
         self.assertEqual(first.author.id, self.user.id)
         self.assertEqual(first.group.title, self.group.title)
+        return response
+
+    def test_index_page_show_correct_context(self):
+        """Шаблон index сформирован с правильным контекстом."""
+        return self.first_page_info(reverse('posts:index'))
 
     def test_profile_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse('posts:profile',
-                    kwargs={'username': self.user}))
-        first = response.context['page_obj'][0]
-
-        self.assertEqual(first.text, self.post.text)
-        self.assertEqual(first.author.id, self.user.id)
-        self.assertEqual(first.group.title, self.group.title)
-        self.assertEqual(response.context['author'], self.user)
+        result = self.first_page_info(reverse('posts:profile',
+                                              kwargs={'username': self.user}))
+        self.assertEqual(result.context.get('author'), self.user)
 
     def test_group_list_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse('posts:group_list',
-                    kwargs={'slug': self.group.slug}))
-        first = response.context['page_obj'][0]
-        self.assertEqual(first.text, self.post.text)
-        self.assertEqual(first.author.id, self.user.id)
-        self.assertEqual(first.group.title, self.group.title)
-        self.assertEqual(response.context['group'], self.group)
+        result = self.first_page_info(reverse('posts:group_list',
+                                              kwargs={'slug': self.group.slug}))
+        self.assertEqual(result.context.get('group'), self.group)
 
     def test_post_detail_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
@@ -122,13 +121,15 @@ class TaskPagesTests(TestCase):
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField}
 
+        fields_check = response.context.get('form')
+
         for value, expected in form_fields.items():
             with self.subTest(value=value):
+                self.assertIsInstance(fields_check, PostForm)
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
         self.assertTrue(response.context['is_edit'])
-        self.assertIsInstance(response.context['form'], PostForm)
         self.assertEqual(response.context.get('form').instance, self.post)
 
     def test_post_create_correct_context(self):
@@ -140,36 +141,29 @@ class TaskPagesTests(TestCase):
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField}
 
+        fields_check = response.context.get('form')
+
         for value, expected in form_fields.items():
             with self.subTest(value=value):
+                self.assertIsInstance(fields_check, PostForm)
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
-        self.assertIsInstance(response.context['form'], PostForm)
-
-    def test_no_post_in_right_pages(self):
+    def test_post_in_right_pages(self):
         """Пост появляется на ожидаемых страница"""
 
         new_post = Post.objects.create(
             text='Тестовый текст',
             author=self.user,
             group=self.group,
-            id=3,
+
         )
-        response_index = self.authorized_client.get(
-            reverse('posts:index'))
-        response_group = self.authorized_client.get(
-            reverse('posts:group_list',
-                    kwargs={'slug': f'{self.group.slug}'}))
-        response_profile = self.authorized_client.get(
-            reverse('posts:profile',
-                    kwargs={'username': f'{self.user.username}'}))
-        index = response_index.context['page_obj']
-        group = response_group.context['page_obj']
-        profile = response_profile.context['page_obj']
-        self.assertIn(new_post, index, 'поста нет на главной')
-        self.assertIn(new_post, group, 'поста нет в профиле')
-        self.assertIn(new_post, profile, 'поста нет в группе')
+
+        for rev, text in self.right_pages_tuple:
+            name = self.authorized_client.get(rev)
+            self.assertIn(new_post,
+                          name.context.get('page_obj'),
+                          text)
 
     def test_no_post_in_wrong_group(self):
         """Пост не попадает на страницу группы, к которой не принадлежит"""
@@ -179,17 +173,17 @@ class TaskPagesTests(TestCase):
             description='Новая группа'
         )
 
-        Post.objects.create(
+        post = Post.objects.create(
             text='Тестовый текст',
             author=self.user,
             group=group_new,
-            id=2,
+
         )
 
         response = self.authorized_client.get(reverse(
-            'posts:group_list', kwargs={'slug': group_new.slug}))
-        first_object = response.context['page_obj'][0]
-        self.assertNotIn(first_object.group.title, self.group.title)
+            'posts:group_list', kwargs={'slug': self.group.slug}))
+        all_objects = response.context['page_obj']
+        self.assertNotIn(post in all_objects, all_objects)
 
 
 class PaginatorViewsTest(TestCase):
@@ -197,8 +191,8 @@ class PaginatorViewsTest(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.count_post = 10
-        cls.create_post = 3
+        cls.count_post = settings.POSTS_LIMIT
+        cls.CREATE_POST = 3
         cls.user = User.objects.create_user(username='Post_writer')
         cls.group = Group.objects.create(
             title='Тестовая группа',
@@ -206,7 +200,7 @@ class PaginatorViewsTest(TestCase):
             description='Тестовое описание',
         )
 
-        for i in range(POSTS_LIMIT + 3):
+        for i in range(settings.POSTS_LIMIT + cls.CREATE_POST):
             Post.objects.create(
                 author=cls.user,
                 text='Тестовый пост',
@@ -225,7 +219,7 @@ class PaginatorViewsTest(TestCase):
         for address in addresses:
             response = self.authorised_client.get(address)
             self.assertEqual(len(response.context['page_obj']),
-                             self.count_post)
+                             settings.POSTS_LIMIT)
 
     def test_second_page_contains_three_records(self):
         addresses = [
@@ -236,4 +230,4 @@ class PaginatorViewsTest(TestCase):
         for address in addresses:
             response = self.authorised_client.get(address + '?page=2')
             self.assertEqual(len(response.context['page_obj']),
-                             self.create_post)
+                             self.CREATE_POST)
