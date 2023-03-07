@@ -1,12 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.conf import settings
 from django import forms
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.forms import PostForm
 from posts.models import Group, Post
-
-from django.conf import settings
 
 User = get_user_model()
 
@@ -31,23 +30,6 @@ class TaskPagesTests(TestCase):
 
         )
 
-        cls.right_pages_tuple = (
-            (reverse('posts:index'), 'поста нет на главной'),
-            (reverse('posts:group_list',
-                     kwargs={'slug': f'{cls.group.slug}'}),
-             'поста нет в профиле'),
-            (reverse('posts:profile',
-                     kwargs={'username': f'{cls.user.username}'}),
-             'поста нет в группе'),
-        )
-
-        # запуталась, не совсем поняла
-        # TODO
-        # cls.index = ('posts/index.html',
-        # {'posts:index': cls.group.slug}, None)
-        # cls.group_list = ('posts:group_list',
-        # {'posts/index.html': cls.group.slug},
-        # {'slug': cls.group.slug})
         cls.templates_pages_names = [(reverse('posts:index'),
                                       'posts/index.html'),
                                      (reverse('posts:group_list',
@@ -78,40 +60,47 @@ class TaskPagesTests(TestCase):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def first_page_info(self, info):
-        response = self.authorized_client.get(info)
-        first = response.context['page_obj'][0]
+    def first_page_info(self, context, is_page=True):
+        if is_page:
+            page = context['page_obj']
+            self.assertIsInstance(PaginatorViewsTest(), page)
+            post = page[0]
+        else:
+            post = context['post']
 
-        self.assertEqual(first.text, self.post.text)
-        self.assertEqual(first.author.id, self.user.id)
-        self.assertEqual(first.group.title, self.group.title)
-        return response
+        self.assertIsInstance(Post(), post)
+
+        self.assertEqual(page.text, self.post.text)
+        self.assertEqual(page.author.id, self.user.id)
+        self.assertEqual(page.group.title, self.group.title)
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-        return self.first_page_info(reverse('posts:index'))
+        response = self.authorized_client.get(reverse('posts:index'))
+        self.first_page_info(response.context)
 
     def test_profile_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        result = self.first_page_info(reverse('posts:profile',
-                                              kwargs={'username': self.user}))
-        self.assertEqual(result.context.get('author'), self.user)
+        self.first_page_info(reverse(
+            'posts:profile',
+            kwargs={'username': self.user}))
 
     def test_group_list_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        result = self.first_page_info(
-            reverse('posts:group_list',
-                    kwargs={'slug': self.group.slug}))
-        self.assertEqual(result.context.get('group'), self.group)
+        response = reverse(
+            'posts:group_list',
+            kwargs={'slug': self.group.slug}
+        )
+
+        self.first_page_info(response.cotext)
+        self.assertEqual(response.context.get('group'), self.group)
 
     def test_post_detail_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         response = self.authorized_client.get(
             reverse('posts:post_detail',
                     kwargs={'post_id': self.post.id}))
-        self.assertEqual(response.context['post'].text, self.post.text)
-        self.assertEqual(response.context['post'].author, self.post.author)
-        self.assertEqual(response.context['post'].group, self.post.group)
+        self.first_page_info(response.context, is_page=False)
 
     def test_post_edit_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
@@ -119,19 +108,21 @@ class TaskPagesTests(TestCase):
             reverse('posts:post_edit',
                     kwargs={'post_id': self.post.id}))
 
+        self.first_page_info(response.context, is_page=False)
+
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField}
 
-        fields_check = response.context.get('form')
+        form = response.context.get('form')
+        self.assertIsInstance(form, PostForm)
 
         for value, expected in form_fields.items():
             with self.subTest(value=value):
-                self.assertIsInstance(fields_check, PostForm)
-                form_field = response.context.get('form').fields.get(value)
+                form_field = form.fields.get(value)git
                 self.assertIsInstance(form_field, expected)
 
-        self.assertTrue(response.context['is_edit'])
+        self.assertTrue(response.context.get('is_edit'))
         self.assertEqual(response.context.get('form').instance, self.post)
 
     def test_post_create_correct_context(self):
@@ -143,16 +134,26 @@ class TaskPagesTests(TestCase):
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField}
 
-        fields_check = response.context.get('form')
+        form = response.context.get('form')
+        self.assertIsInstance(form, PostForm)
 
         for value, expected in form_fields.items():
             with self.subTest(value=value):
-                self.assertIsInstance(fields_check, PostForm)
-                form_field = response.context.get('form').fields.get(value)
+                form_field = form.fields.get(value)
                 self.assertIsInstance(form_field, expected)
 
     def test_post_in_right_pages(self):
         """Пост появляется на ожидаемых страница"""
+
+        right_pages_tuple = (
+            (reverse('posts:index'), 'поста нет на главной'),
+            (reverse('posts:group_list',
+                     kwargs={'slug': f'{self.group.slug}'}),
+             'поста нет в профиле'),
+            (reverse('posts:profile',
+                     kwargs={'username': f'{self.user.username}'}),
+             'поста нет в группе'),
+        )
 
         new_post = Post.objects.create(
             text='Тестовый текст',
@@ -161,11 +162,12 @@ class TaskPagesTests(TestCase):
 
         )
 
-        for rev, text in self.right_pages_tuple:
+        for rev, text in right_pages_tuple:
             name = self.authorized_client.get(rev)
-            self.assertIn(new_post,
-                          name.context.get('page_obj'),
-                          text)
+            self.assertIn(
+                new_post,
+                name.context.get('page_obj'),
+                text)
 
     def test_no_post_in_wrong_group(self):
         """Пост не попадает на страницу группы, к которой не принадлежит"""
@@ -185,7 +187,7 @@ class TaskPagesTests(TestCase):
         response = self.authorized_client.get(reverse(
             'posts:group_list', kwargs={'slug': self.group.slug}))
         all_objects = response.context['page_obj']
-        self.assertNotIn(post in all_objects, all_objects)
+        self.assertNotIn(post, all_objects)
 
 
 class PaginatorViewsTest(TestCase):

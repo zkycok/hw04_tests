@@ -26,21 +26,14 @@ class TaskURLTests(TestCase):
             author=cls.user,
         )
 
-        name_create = 'posts/create_post.html'
-        cls.templates_url_names_public = {
-            'posts/index.html': '/',
-            'posts/group_list.html': f'/group/{cls.group.slug}/',
-            'posts/profile.html': f'/profile/{cls.user.username}/',
-            'posts/post_detail.html': f'/posts/{cls.post.id}/',
+        cls.templates_url_names = {
+            '/': 'posts/index.html',
+            f'/group/{cls.group.slug}/': 'posts/group_list.html',
+            '/profile/{cls.user.username}/': 'posts/profile.html',
+            f'/posts/{cls.post.id}/': 'posts/post_detail.html',
+            f'/posts/{cls.post.id}/edit/': 'posts/create_post.html',
+            '/create/': 'posts/create_post.html',
         }
-
-        cls.templates_url_names_private = {
-            'posts/create_post.html': f'/posts/{cls.post.id}/edit/',
-            name_create: '/create/',
-        }
-
-        cls.templates_url_names = {**cls.templates_url_names_public,
-                                   **cls.templates_url_names_private}
 
     def setUp(self):
         self.guest_client = Client()
@@ -59,7 +52,7 @@ class TaskURLTests(TestCase):
     def test_urls_not_author_users(self):
         """Доступность публичных страниц для неавторизованного пользователя"""
 
-        for address in self.templates_url_names_public.values():
+        for address in self.templates_url_names.values():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -67,7 +60,7 @@ class TaskURLTests(TestCase):
     def test_urls_not_author_users_redirect(self):
         """Редирект неавторизованного с публичных страниц"""
 
-        for address in self.templates_url_names_private.values():
+        for address in self.templates_url_names.values():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.FOUND)

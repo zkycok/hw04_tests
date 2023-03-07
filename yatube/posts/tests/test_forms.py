@@ -14,12 +14,12 @@ class TaskCreateFormTests(TestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.user = User.objects.create_user(username="auth")
+        cls.user = User.objects.create_user(username='auth')
 
         cls.group = Group.objects.create(
-            title="Название группы",
-            slug="test-slug",
-            description="Описание группы"
+            title='Название группы',
+            slug='test-slug',
+            description='Описание группы'
         )
 
     def setUp(self):
@@ -41,11 +41,11 @@ class TaskCreateFormTests(TestCase):
             follow=True)
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Post.objects.count(), post_count + 1)
         first_post = Post.objects.first()
 
-        self.assertTrue(first_post.text, templates_form_names['text'])
-        self.assertTrue(first_post.group, templates_form_names['group'])
-        self.assertEqual(Post.objects.count(), post_count + 1)
+        self.assertEqual(first_post.text, templates_form_names['text'])
+        self.assertEqual(first_post.group.id, templates_form_names['group'])
 
     def test_edit_post(self):
         post = Post.objects.create(
@@ -71,10 +71,18 @@ class TaskCreateFormTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         post = Post.objects.get(id=post.id)
-        self.assertTrue(post.text, templates_form_names['text'])
-        self.assertTrue(self.group.title, templates_form_names['group'])
+        self.assertEqual(post.text, templates_form_names['text'])
+        self.assertEqual(post.group.title, templates_form_names['group'])
 
     def test_not_auth(self):
         post_count = Post.objects.count()
 
-        self.assertNotEqual(Post.objects.count(), post_count + 1)
+        templates_form_names = {'text': 'Самый новый пост',
+                                'group': self.group.id,
+                                }
+        response = self.guest_client.post(
+            reverse('posts:post_create'),
+            data=templates_form_names,
+            follow=True)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Post.objects.count(), post_count)

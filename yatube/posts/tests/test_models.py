@@ -24,20 +24,12 @@ class PostModelTest(TestCase):
         )
 
     def test_title_label_post(self):
-        """Проверка заполнения атрибутов Post"""
+        """Проверка заполнения атрибутов Post & Group"""
 
-        templates_field = {str(self.post): f'{self.post.text[:15]},'
-                                           f' {self.post.pub_date},'
-                                           f' {self.post.group}'}
-
-        for field, value in templates_field.items():
-            with self.subTest(field=field):
-                self.assertEqual(field, value)
-
-    def test_title_label_group(self):
-        """Проверка заполнения атрибутов Group"""
-
-        templates_field = {str(self.group): f'Group: {self.group.slug}'}
+        templates_field = {str(self.post): (f'{self.post.text[:15]},'
+                                            f' {self.post.pub_date},'
+                                            f' {self.post.group}'),
+                           str(self.group): f'Group: {self.group.slug}'}
 
         for field, value in templates_field.items():
             with self.subTest(field=field):
