@@ -119,8 +119,9 @@ class TaskPagesTests(TestCase):
 
         for value, expected in form_fields.items():
             with self.subTest(value=value):
-                form_field = form.fields.get(value)git
-                self.assertIsInstance(form_field, expected)
+                form_field = form.fields.get(value)
+                self.assertIsInstance(form_field,
+                                      expected)
 
         self.assertTrue(response.context.get('is_edit'))
         self.assertEqual(response.context.get('form').instance, self.post)
