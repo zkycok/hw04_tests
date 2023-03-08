@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.core.paginator import Page
 from django import forms
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -62,8 +63,8 @@ class TaskPagesTests(TestCase):
 
     def first_page_info(self, context, is_page=True):
         if is_page:
-            page = context['page_obj']
-            self.assertIsInstance(page, PaginatorViewsTest)
+            page = context.get('page_obj')
+            self.assertIsInstance(page, Page)
             post = page[0]
         else:
             post = context.get('post')
@@ -83,7 +84,7 @@ class TaskPagesTests(TestCase):
         """Шаблон profile сформирован с правильным контекстом."""
         self.first_page_info(reverse(
             'posts:profile',
-            kwargs={'username': self.user}))
+            kwargs={'username': self.user}), is_page=False)
 
     def test_group_list_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
