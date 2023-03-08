@@ -72,7 +72,7 @@ class TaskCreateFormTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         post = Post.objects.get(id=post.id)
         self.assertEqual(post.text, templates_form_names['text'])
-        self.assertEqual(post.group.title, templates_form_names['group'])
+        self.assertEqual(post.group.id, templates_form_names['group'])
 
     def test_not_auth(self):
         post_count = Post.objects.count()

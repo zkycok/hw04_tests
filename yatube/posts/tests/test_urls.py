@@ -26,14 +26,20 @@ class TaskURLTests(TestCase):
             author=cls.user,
         )
 
-        cls.templates_url_names = {
+        cls.templates_url_names_public = {
             '/': 'posts/index.html',
             f'/group/{cls.group.slug}/': 'posts/group_list.html',
-            '/profile/{cls.user.username}/': 'posts/profile.html',
+            f'/profile/{cls.user.username}/': 'posts/profile.html',
             f'/posts/{cls.post.id}/': 'posts/post_detail.html',
+        }
+
+        cls.templates_url_names_private = {
             f'/posts/{cls.post.id}/edit/': 'posts/create_post.html',
             '/create/': 'posts/create_post.html',
         }
+
+        cls.templates_url_names = {**cls.templates_url_names_public,
+                                   **cls.templates_url_names_private}
 
     def setUp(self):
         self.guest_client = Client()
@@ -44,7 +50,7 @@ class TaskURLTests(TestCase):
         """Доступность всех страниц для
          авторизованного пользователя-автора тестового поста"""
 
-        for address in self.templates_url_names.values():
+        for address in self.templates_url_names.keys():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -52,7 +58,7 @@ class TaskURLTests(TestCase):
     def test_urls_not_author_users(self):
         """Доступность публичных страниц для неавторизованного пользователя"""
 
-        for address in self.templates_url_names.values():
+        for address in self.templates_url_names_public.keys():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -60,7 +66,7 @@ class TaskURLTests(TestCase):
     def test_urls_not_author_users_redirect(self):
         """Редирект неавторизованного с публичных страниц"""
 
-        for address in self.templates_url_names.values():
+        for address in self.templates_url_names_private.keys():
             with self.subTest(address=address):
                 response = self.guest_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.FOUND)
@@ -81,7 +87,7 @@ class TaskURLTests(TestCase):
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
 
-        for template, address in self.templates_url_names.items():
+        for address, template in self.templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)

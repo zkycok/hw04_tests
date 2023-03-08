@@ -63,16 +63,16 @@ class TaskPagesTests(TestCase):
     def first_page_info(self, context, is_page=True):
         if is_page:
             page = context['page_obj']
-            self.assertIsInstance(PaginatorViewsTest(), page)
+            self.assertIsInstance(page, PaginatorViewsTest)
             post = page[0]
         else:
-            post = context['post']
+            post = context.get('post')
 
-        self.assertIsInstance(Post(), post)
+        self.assertIsInstance(post, Post)
 
-        self.assertEqual(page.text, self.post.text)
-        self.assertEqual(page.author.id, self.user.id)
-        self.assertEqual(page.group.title, self.group.title)
+        self.assertEqual(post.text, self.post.text)
+        self.assertEqual(post.author.id, self.user.id)
+        self.assertEqual(post.group.title, self.group.title)
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
@@ -92,7 +92,7 @@ class TaskPagesTests(TestCase):
             kwargs={'slug': self.group.slug}
         )
 
-        self.first_page_info(response.cotext)
+        self.first_page_info(response, is_page=False)
         self.assertEqual(response.context.get('group'), self.group)
 
     def test_post_detail_correct_context(self):
