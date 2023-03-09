@@ -31,9 +31,10 @@ class TaskCreateFormTests(TestCase):
         Post.objects.all().delete()
         post_count = Post.objects.count()
 
-        templates_form_names = {'text': 'Самый новый пост',
-                                'group': self.group.id,
-                                }
+        templates_form_names = {
+            'text': 'Самый новый пост',
+            'group': self.group.id,
+        }
 
         response = self.authorized_client.post(
             reverse('posts:post_create'),
