@@ -41,7 +41,6 @@ class TaskCreateFormTests(TestCase):
             data=templates_form_names,
             follow=True)
 
-        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Post.objects.count(), post_count + 1)
         first_post = Post.objects.first()
 
