@@ -36,6 +36,11 @@ class TaskCreateFormTests(TestCase):
             'group': self.group.id,
         }
 
+        self.authorized_client.post(
+            reverse('posts:post_create'),
+            data=templates_form_names,
+            follow=True)
+
         self.assertEqual(Post.objects.count(), post_count + 1)
         first_post = Post.objects.first()
 
