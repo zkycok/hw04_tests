@@ -75,6 +75,7 @@ class TaskPagesTests(TestCase):
         self.assertEqual(post.author.id, self.user.id)
         self.assertEqual(post.group.title, self.group.title)
         self.assertEqual(post.pub_date, self.post.pub_date)
+        self.assertEqual(post.image, self.post.image)
 
     def test_index_page_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
@@ -116,7 +117,9 @@ class TaskPagesTests(TestCase):
 
         form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField}
+            'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField,
+        }
 
         form = response.context.get('form')
         self.assertIsInstance(form, PostForm)
@@ -137,7 +140,9 @@ class TaskPagesTests(TestCase):
 
         form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField}
+            'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField,
+        }
 
         form = response.context.get('form')
         self.assertIsInstance(form, PostForm)
