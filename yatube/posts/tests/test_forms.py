@@ -59,7 +59,7 @@ class TaskCreateFormTests(TestCase):
         templates_form_names = {
             'text': 'Самый новый пост',
             'group': self.group.id,
-            'image': uploaded.name,
+            'image': uploaded,
         }
         self.authorized_client.post(
             reverse('posts:post_create'),
@@ -111,3 +111,5 @@ class TaskCreateFormTests(TestCase):
             follow=True)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Post.objects.count(), post_count)
+
+    # def test_
