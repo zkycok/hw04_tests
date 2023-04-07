@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Comment
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -112,4 +112,41 @@ class TaskCreateFormTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertEqual(Post.objects.count(), post_count)
 
-    # def test_
+    def test_not_auth_comment(self):
+        comment_count = Comment.objects.count()
+        post = Post.objects.create(
+            text='Тестовый текст',
+            author=self.user,
+            group=self.group,
+        )
+
+        templates_form_names = {'text': 'Тестовый комментарий'}
+
+        response = self.guest_client.post(
+            reverse('posts:add_comment',
+                    kwargs={'post_id': post.id}),
+            data=templates_form_names,
+            follow=True)
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Comment.objects.count(), comment_count)
+
+    def test_create_comment(self):
+        post = Post.objects.create(
+            text='Тестовый текст',
+            author=self.user,
+            group=self.group,
+        )
+
+        templates_form_names = {'text': 'Тестовый комментарий'}
+
+        response = self.authorized_client.post(
+            reverse('posts:add_comment',
+                    kwargs={'post_id': post.id}),
+            data=templates_form_names,
+            follow=True)
+
+        comment_count = Comment.objects.count()
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertEqual(Comment.objects.count(), comment_count)
