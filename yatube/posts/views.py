@@ -1,11 +1,15 @@
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
 from .forms import PostForm, CommentForm
-from .models import Group, Post, User
+from .models import Follow, Group, Post, User
 from .utils import pagination_fun
+from django.http import HttpResponseRedirect
 
 
+@cache_page(20)
 def index(request):
     post_list = Post.objects.select_related('group', 'author')
 
@@ -107,3 +111,40 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+def follow_index(request):
+    user = request.user
+    authors = user.follower.values_list('author', flat=True)
+    posts_list = Post.objects.filter(author__id__in=authors)
+
+    paginator = Paginator(posts_list, 10)
+    page_number = request.GET.get('page')
+    page = paginator.get_page(page_number)
+
+    return render(
+        request,
+        'posts/follow.html',
+        {'page': page, 'paginator': paginator}
+    )
+
+
+@login_required
+def profile_follow(request, username):
+    author = User.objects.get(username=username)
+    user = request.user
+    if author != user:
+        Follow.objects.get_or_create(user=user, author=author)
+        return redirect(
+            'profile',
+            username=username
+        )
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+@login_required
+def profile_unfollow(request, username):
+    user = request.user
+    Follow.objects.get(user=user, author__username=username).delete()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))

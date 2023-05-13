@@ -1,12 +1,13 @@
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.core.cache import cache
 from django.core.paginator import Page
 from django import forms
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.forms import PostForm
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -191,13 +192,28 @@ class TaskPagesTests(TestCase):
             text='Тестовый текст',
             author=self.user,
             group=group_new,
-
         )
 
         response = self.authorized_client.get(reverse(
             'posts:group_list', kwargs={'slug': self.group.slug}))
         all_objects = response.context['page_obj']
         self.assertNotIn(post, all_objects)
+
+    def test_cache_index(self):
+        """Проверка кэша для index"""
+        response = self.authorized_client.get(reverse('posts:index'))
+        posts = response.content
+        Post.objects.create(
+            text='test_new_post',
+            author=self.user,
+        )
+        response_old = self.authorized_client.get(reverse('posts:index'))
+        old_posts = response_old.content
+        self.assertEqual(old_posts, posts)
+        cache.clear()
+        response_new = self.authorized_client.get(reverse('posts:index'))
+        new_posts = response_new.content
+        self.assertNotEqual(old_posts, new_posts)
 
 
 class PaginatorViewsTest(TestCase):
@@ -245,3 +261,43 @@ class PaginatorViewsTest(TestCase):
             response = self.authorised_client.get(address + '?page=2')
             self.assertEqual(len(response.context['page_obj']),
                              self.CREATE_POST)
+
+class FollowTest(TestCase):
+    def setUp(self):
+        self.client_auth_follower = Client()
+        self.client_auth_following = Client()
+        self.user_follower = User.objects.create_user(
+            username='First', email='first@mail.ru', password='pass')
+        self.user_following = User.objects.create_user(
+            username='Second', email='second@mail.ru', password='pass')
+        self.post = Post.objects.create(
+            author=self.user_following,
+            text='test_post'
+        )
+        self.client_auth_follower.force_login(self.user_follower)
+        self.client_auth_following.force_login(self.user_following)
+
+    def test_follow(self):
+        self.client_auth_follower.get(reverse('posts:profile_follow', kwargs={
+            'username': self.user_following.username}))
+        self.assertEqual(Follow.objects.all().count(), 1)
+
+    def test_unfollow(self):
+        self.client_auth_follower.get(reverse(
+            'posts:profile_follow', kwargs={
+                'username': self.user_following.username}))
+        self.client_auth_follower.get(reverse(
+            'posts:profile_unfollow', kwargs={
+                'username': self.user_following.username}))
+        self.assertEqual(Follow.objects.all().count(), 0)
+
+    def test_subscription_feed(self):
+        Follow.objects.create(
+            user=self.user_follower, author=self.user_following)
+        response = self.client_auth_follower.get(
+            reverse('posts:follow_index'))
+        post_text_0 = response.context['page_obj'][0].text
+        self.assertEqual(post_text_0, self.post.text)
+        response = self.client_auth_following.get(
+            reverse('posts:follow_index'))
+        self.assertNotContains(response, self.post.text)
